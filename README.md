@@ -57,7 +57,6 @@ library(pROC)
 
 # 2) Data Preparation
 
-
 ``` r
 Bank_Data <- read_csv("Bank_Churn_Data.csv")
 Bank_Data <- as.data.frame(Bank_Data)
@@ -78,8 +77,7 @@ Bank_Data <- Bank_Data[,-c(22,23)]
 
 # 3) Initial Analysis
 
-
-PCA
+PCA Analysis
 ------------
 
 ``` r
@@ -320,7 +318,6 @@ in determining potential attritions.
 
 # 4) Predictive Model Building & Results
 
-
 Generating Training and Test Set
 --------------------------------
 
@@ -400,11 +397,67 @@ set.seed(1)
 
 ctrl = trainControl(method="repeatedcv",number=10,repeats=5)
 
-#Train decision tree:
+accuracy_list = c()
+
+for(i in 1:20){
+  #Train decision tree:
 dtree_fit = train(Attrition_Flag ~., 
                   data = Bank_Train_SMOTE[,-c(1)], 
                   method = "rpart",
-                  tuneLength = 10,
+                  tuneLength = i,
+                  trControl = ctrl)
+
+end = Sys.time()
+
+end - start
+
+decision_tree_pred = predict(dtree_fit,Bank_Test[,-c(1,2)])
+
+actual <- as.data.frame(as.factor(Bank_Test$Attrition_Flag))
+predicted <- as.data.frame(as.factor(decision_tree_pred))
+
+total_accuracy = 0
+
+  for (j in 1:nrow(predicted)){
+    if (predicted[j,1] == actual[j,1]){
+      total_accuracy = total_accuracy + 1
+    }
+    else{
+      total_accuracy = total_accuracy + 0
+    }
+  }
+  
+  print(total_accuracy)
+  
+  updated_accuracy = (total_accuracy / nrow(predicted))
+  
+  accuracy_list[i] <- updated_accuracy
+  
+  print(accuracy_list[i])
+  
+  }
+
+print(max(accuracy_list))
+print(which.max(accuracy_list))
+
+
+# class(Bank_XG_Test$Attrition_Flag)
+# levels(Bank_XG_Test$Attrition_Flag)
+
+plot(accuracy_list, type = "o")
+```
+
+``` r
+set.seed(1)
+
+start = Sys.time()
+
+ctrl = trainControl(method="repeatedcv",number=10,repeats=5)
+
+dtree_fit = train(Attrition_Flag ~., 
+                  data = Bank_Train_SMOTE[,-c(1)], 
+                  method = "rpart",
+                  tuneLength = 14,
                   trControl = ctrl)
 
 end = Sys.time()
@@ -412,18 +465,18 @@ end = Sys.time()
 end - start
 ```
 
-    ## Time difference of 4.880644 secs
+    ## Time difference of 6.135524 secs
 
 ``` r
+decision_tree_pred = predict(dtree_fit,Bank_Test[,-c(1,2)])
+
 #Visualize:
 prp(dtree_fit$finalModel)
 ```
 
-![](README_figs/README-unnamed-chunk-11-1.png)
+![](README_figs/README-unnamed-chunk-12-1.png)
 
 ``` r
-decision_tree_pred = predict(dtree_fit,Bank_Test[,-c(1)])
-
 dtree_confusion <- confusionMatrix(decision_tree_pred, Bank_Test$Attrition_Flag)
 
 dtree_confusion
@@ -433,31 +486,31 @@ dtree_confusion
     ## 
     ##                    Reference
     ## Prediction          Attrited Customer Existing Customer
-    ##   Attrited Customer               451               275
-    ##   Existing Customer                37              2275
+    ##   Attrited Customer               443               228
+    ##   Existing Customer                45              2322
     ##                                            
-    ##                Accuracy : 0.8973           
-    ##                  95% CI : (0.886, 0.9079)  
+    ##                Accuracy : 0.9101           
+    ##                  95% CI : (0.8994, 0.9201) 
     ##     No Information Rate : 0.8394           
     ##     P-Value [Acc > NIR] : < 2.2e-16        
     ##                                            
-    ##                   Kappa : 0.6819           
+    ##                   Kappa : 0.7106           
     ##                                            
     ##  Mcnemar's Test P-Value : < 2.2e-16        
     ##                                            
-    ##             Sensitivity : 0.9242           
-    ##             Specificity : 0.8922           
-    ##          Pos Pred Value : 0.6212           
-    ##          Neg Pred Value : 0.9840           
+    ##             Sensitivity : 0.9078           
+    ##             Specificity : 0.9106           
+    ##          Pos Pred Value : 0.6602           
+    ##          Neg Pred Value : 0.9810           
     ##              Prevalence : 0.1606           
-    ##          Detection Rate : 0.1485           
-    ##    Detection Prevalence : 0.2390           
-    ##       Balanced Accuracy : 0.9082           
+    ##          Detection Rate : 0.1458           
+    ##    Detection Prevalence : 0.2209           
+    ##       Balanced Accuracy : 0.9092           
     ##                                            
     ##        'Positive' Class : Attrited Customer
     ## 
 
-The decision tree did slightly better with an accuracy of 89.73%. The
+The decision tree did slightly better with an accuracy of 91.01%. The
 accuracy is high than the no information rate, showing that it proves to
 be somewhat useful in predicting attrition and retention.
 
@@ -469,14 +522,124 @@ start = Sys.time()
 
 set.seed(1)
 ctrl = trainControl(method="oob")
+accuracy_list = c()
 
-#Train decision tree:
+for (i in 1:20){
+  #Train decision tree:
 bag_fit = train(Attrition_Flag ~., 
                   data = Bank_Train_SMOTE[,-c(1)], 
                   method = "treebag",
                   nbagg = 100,
                   keepX = TRUE,
-                  tuneLength = 20,
+                  tuneLength = i,
+                  trControl = ctrl)
+
+end = Sys.time()
+
+end - start
+
+bagged_tree_pred = predict(bag_fit,Bank_Test[,-c(1,2)])
+
+actual <- as.data.frame(as.factor(Bank_Test$Attrition_Flag))
+predicted <- as.data.frame(as.factor(bagged_tree_pred))
+
+total_accuracy = 0
+
+  for (j in 1:nrow(predicted)){
+    if (predicted[j,1] == actual[j,1]){
+      total_accuracy = total_accuracy + 1
+    }
+    else{
+      total_accuracy = total_accuracy + 0
+    }
+  }
+  
+  # print(total_accuracy)
+  
+  updated_accuracy = (total_accuracy / nrow(predicted))
+  
+  accuracy_list[i] <- updated_accuracy
+  
+  # print(accuracy_list[i])
+  
+  }
+
+print(max(accuracy_list))
+print(which.max(accuracy_list))
+
+
+# class(Bank_XG_Test$Attrition_Flag)
+# levels(Bank_XG_Test$Attrition_Flag)
+
+plot(accuracy_list, type = "o")
+```
+
+``` r
+start = Sys.time()
+
+set.seed(1)
+ctrl = trainControl(method="oob")
+accuracy_list = c()
+
+for (i in 2:100){
+  #Train decision tree:
+bag_fit = train(Attrition_Flag ~., 
+                  data = Bank_Train_SMOTE[,-c(1)], 
+                  method = "treebag",
+                  nbagg = i,
+                  keepX = TRUE,
+                  tuneLength = 14,
+                  trControl = ctrl)
+
+end = Sys.time()
+
+end - start
+
+bagged_tree_pred = predict(bag_fit,Bank_Test[,-c(1,2)])
+
+actual <- as.data.frame(as.factor(Bank_Test$Attrition_Flag))
+predicted <- as.data.frame(as.factor(bagged_tree_pred))
+
+total_accuracy = 0
+
+  for (j in 1:nrow(predicted)){
+    if (predicted[j,1] == actual[j,1]){
+      total_accuracy = total_accuracy + 1
+    }
+    else{
+      total_accuracy = total_accuracy + 0
+    }
+  }
+  
+  print(total_accuracy)
+  
+  updated_accuracy = (total_accuracy / nrow(predicted))
+  
+  accuracy_list[i] <- updated_accuracy
+  
+  print(accuracy_list[i])
+  
+  }
+
+print(max(accuracy_list))
+print(which.max(accuracy_list))
+
+
+# class(Bank_XG_Test$Attrition_Flag)
+# levels(Bank_XG_Test$Attrition_Flag)
+
+plot(accuracy_list, type = "o")
+```
+
+``` r
+start = Sys.time()
+
+bag_fit = train(Attrition_Flag ~., 
+                  data = Bank_Train_SMOTE[,-c(1)], 
+                  method = "treebag",
+                  nbagg = 90,
+                  keepX = TRUE,
+                  tuneLength = 14,
                   trControl = ctrl)
 
 end = Sys.time()
@@ -484,11 +647,9 @@ end = Sys.time()
 end - start
 ```
 
-    ## Time difference of 10.67039 secs
+    ## Time difference of 3.085283 mins
 
 ``` r
-bagged_pred = predict(bag_fit,Bank_Test[,-c(1,2)])
-
 bagged_tree_pred = predict(bag_fit,Bank_Test[,-c(1,2)])
 
 bagged_confusion <- confusionMatrix(bagged_tree_pred, Bank_Test$Attrition_Flag)
@@ -500,32 +661,31 @@ bagged_confusion
     ## 
     ##                    Reference
     ## Prediction          Attrited Customer Existing Customer
-    ##   Attrited Customer               469               184
-    ##   Existing Customer                19              2366
+    ##   Attrited Customer               469               168
+    ##   Existing Customer                19              2382
     ##                                            
-    ##                Accuracy : 0.9332           
-    ##                  95% CI : (0.9237, 0.9418) 
+    ##                Accuracy : 0.9384           
+    ##                  95% CI : (0.9293, 0.9467) 
     ##     No Information Rate : 0.8394           
     ##     P-Value [Acc > NIR] : < 2.2e-16        
     ##                                            
-    ##                   Kappa : 0.782            
+    ##                   Kappa : 0.7968           
     ##                                            
     ##  Mcnemar's Test P-Value : < 2.2e-16        
     ##                                            
     ##             Sensitivity : 0.9611           
-    ##             Specificity : 0.9278           
-    ##          Pos Pred Value : 0.7182           
-    ##          Neg Pred Value : 0.9920           
+    ##             Specificity : 0.9341           
+    ##          Pos Pred Value : 0.7363           
+    ##          Neg Pred Value : 0.9921           
     ##              Prevalence : 0.1606           
     ##          Detection Rate : 0.1544           
-    ##    Detection Prevalence : 0.2149           
-    ##       Balanced Accuracy : 0.9445           
+    ##    Detection Prevalence : 0.2097           
+    ##       Balanced Accuracy : 0.9476           
     ##                                            
     ##        'Positive' Class : Attrited Customer
     ## 
 
-Bagged trees performed remarkably well with an accuracy of approximately
-94%.
+Bagged trees performed remarkably well with an accuracy of 93.42%.
 
 ``` r
 Importance = varImp(bag_fit)
@@ -533,7 +693,7 @@ Importance = varImp(bag_fit)
 plot(Importance)
 ```
 
-![](README_figs/README-unnamed-chunk-13-1.png)
+![](README_figs/README-unnamed-chunk-16-1.png)
 
 For the bagged tree model, Total Transaction Amount, Total Revolving
 Balance, and Total Transaction Count proved to be the three most
@@ -551,7 +711,7 @@ random_forest_model = train(Attrition_Flag ~ .,
                             method = "rf",
                             trControl = trctrl,
                             tuneLength = 8,
-                            ntree = 100,
+                            ntree = 90,
                             importance = TRUE)
 
 stop = Sys.time()
@@ -559,7 +719,7 @@ stop = Sys.time()
 stop - start
 ```
 
-    ## Time difference of 11.90046 mins
+    ## Time difference of 10.45226 mins
 
 ``` r
 random_forest_model #Display performance for different complexity parameters
@@ -573,18 +733,18 @@ random_forest_model #Display performance for different complexity parameters
     ## 
     ## No pre-processing
     ## Resampling: Cross-Validated (10 fold, repeated 5 times) 
-    ## Summary of sample sizes: 4101, 4100, 4100, 4100, 4101, 4101, ... 
+    ## Summary of sample sizes: 4100, 4100, 4100, 4100, 4100, 4100, ... 
     ## Resampling results across tuning parameters:
     ## 
     ##   mtry  Accuracy   Kappa    
-    ##    2    0.9395974  0.8791945
-    ##    6    0.9628633  0.9257268
-    ##   10    0.9641797  0.9283594
-    ##   14    0.9627751  0.9255503
-    ##   19    0.9614156  0.9228311
-    ##   23    0.9603602  0.9207203
-    ##   27    0.9583853  0.9167705
-    ##   32    0.9563221  0.9126443
+    ##    2    0.9395079  0.8790152
+    ##    6    0.9630378  0.9260753
+    ##   10    0.9640894  0.9281784
+    ##   14    0.9632135  0.9264265
+    ##   19    0.9623354  0.9246704
+    ##   23    0.9607102  0.9214197
+    ##   27    0.9597439  0.9194875
+    ##   32    0.9580769  0.9161533
     ## 
     ## Accuracy was used to select the optimal model using the largest value.
     ## The final value used for the model was mtry = 10.
@@ -596,14 +756,14 @@ Visualization of the RF Model Performance
 plot(random_forest_model)
 ```
 
-![](README_figs/README-unnamed-chunk-15-1.png)
+![](README_figs/README-unnamed-chunk-18-1.png)
 
 ``` r
 Importance = varImp(random_forest_model)
 plot(Importance)
 ```
 
-![](README_figs/README-unnamed-chunk-16-1.png)
+![](README_figs/README-unnamed-chunk-19-1.png)
 
 For the random forest model, Total Transaction Count, Total Transaction
 Amount, and Total Amount Change Q4\_Q1 were the three most important
@@ -621,26 +781,26 @@ rf_confusion
     ## 
     ##                    Reference
     ## Prediction          Attrited Customer Existing Customer
-    ##   Attrited Customer               471               155
-    ##   Existing Customer                17              2395
+    ##   Attrited Customer               472               159
+    ##   Existing Customer                16              2391
     ##                                            
-    ##                Accuracy : 0.9434           
-    ##                  95% CI : (0.9346, 0.9513) 
+    ##                Accuracy : 0.9424           
+    ##                  95% CI : (0.9335, 0.9504) 
     ##     No Information Rate : 0.8394           
     ##     P-Value [Acc > NIR] : < 2.2e-16        
     ##                                            
-    ##                   Kappa : 0.8116           
+    ##                   Kappa : 0.809            
     ##                                            
     ##  Mcnemar's Test P-Value : < 2.2e-16        
     ##                                            
-    ##             Sensitivity : 0.9652           
-    ##             Specificity : 0.9392           
-    ##          Pos Pred Value : 0.7524           
-    ##          Neg Pred Value : 0.9930           
+    ##             Sensitivity : 0.9672           
+    ##             Specificity : 0.9376           
+    ##          Pos Pred Value : 0.7480           
+    ##          Neg Pred Value : 0.9934           
     ##              Prevalence : 0.1606           
-    ##          Detection Rate : 0.1550           
-    ##    Detection Prevalence : 0.2061           
-    ##       Balanced Accuracy : 0.9522           
+    ##          Detection Rate : 0.1554           
+    ##    Detection Prevalence : 0.2077           
+    ##       Balanced Accuracy : 0.9524           
     ##                                            
     ##        'Positive' Class : Attrited Customer
     ## 
@@ -655,23 +815,74 @@ KNN
 start = Sys.time()
 
 trctrl = trainControl(method = "repeatedcv", number=10,repeats=5)
+accuracy_list = c()
+
+for (i in 1:20){
+knn_fit = train(Attrition_Flag ~ ., 
+               data = Bank_Train_SMOTE[,-c(1)], 
+               method = "knn",
+               trControl = trctrl,
+               tuneLength = i)
+
+stop = Sys.time()
+stop-start
+
+knn_pred = predict(knn_fit,Bank_Test[,-c(1,2)])
+
+
+actual <- as.data.frame(as.factor(Bank_Test$Attrition_Flag))
+predicted <- as.data.frame(as.factor(knn_pred))
+
+total_accuracy = 0
+
+  for (j in 1:nrow(predicted)){
+    if (predicted[j,1] == actual[j,1]){
+      total_accuracy = total_accuracy + 1
+    }
+    else{
+      total_accuracy = total_accuracy + 0
+    }
+  }
+  
+  # print(total_accuracy)
+  
+  updated_accuracy = (total_accuracy / nrow(predicted))
+  
+  accuracy_list[i] <- updated_accuracy
+  
+  # print(accuracy_list[i])
+  
+  }
+
+print(max(accuracy_list))
+print(which.max(accuracy_list))
+
+
+# class(Bank_XG_Test$Attrition_Flag)
+# levels(Bank_XG_Test$Attrition_Flag)
+
+plot(accuracy_list, type = "o")
+```
+
+``` r
+start = Sys.time()
+
+trctrl = trainControl(method = "repeatedcv", number=10,repeats=5)
 
 knn_fit = train(Attrition_Flag ~ ., 
                data = Bank_Train_SMOTE[,-c(1)], 
                method = "knn",
                trControl = trctrl,
-               tuneLength = 5)
+               tuneLength = 2)
 
 stop = Sys.time()
 stop-start
 ```
 
-    ## Time difference of 16.26165 secs
+    ## Time difference of 7.386363 secs
 
 ``` r
-predictions <- predict(knn_fit, newdata = Bank_Test[,-c(1)])
-
-knn_pred = predict(knn_fit,Bank_Test[,-c(1)])
+knn_pred = predict(knn_fit,Bank_Test[,-c(1,2)])
 
 knn_confusion <- confusionMatrix(knn_pred, Bank_Test$Attrition_Flag)
 
@@ -682,26 +893,26 @@ knn_confusion
     ## 
     ##                    Reference
     ## Prediction          Attrited Customer Existing Customer
-    ##   Attrited Customer               409               431
-    ##   Existing Customer                79              2119
+    ##   Attrited Customer               408               433
+    ##   Existing Customer                80              2117
     ##                                            
-    ##                Accuracy : 0.8321           
-    ##                  95% CI : (0.8184, 0.8453) 
+    ##                Accuracy : 0.8311           
+    ##                  95% CI : (0.8173, 0.8443) 
     ##     No Information Rate : 0.8394           
-    ##     P-Value [Acc > NIR] : 0.8666           
+    ##     P-Value [Acc > NIR] : 0.8956           
     ##                                            
-    ##                   Kappa : 0.518            
+    ##                   Kappa : 0.5155           
     ##                                            
     ##  Mcnemar's Test P-Value : <2e-16           
     ##                                            
-    ##             Sensitivity : 0.8381           
-    ##             Specificity : 0.8310           
-    ##          Pos Pred Value : 0.4869           
-    ##          Neg Pred Value : 0.9641           
+    ##             Sensitivity : 0.8361           
+    ##             Specificity : 0.8302           
+    ##          Pos Pred Value : 0.4851           
+    ##          Neg Pred Value : 0.9636           
     ##              Prevalence : 0.1606           
-    ##          Detection Rate : 0.1346           
-    ##    Detection Prevalence : 0.2765           
-    ##       Balanced Accuracy : 0.8345           
+    ##          Detection Rate : 0.1343           
+    ##    Detection Prevalence : 0.2768           
+    ##       Balanced Accuracy : 0.8331           
     ##                                            
     ##        'Positive' Class : Attrited Customer
     ## 
@@ -710,7 +921,7 @@ The KNN model did not perform very well, with the lowest accuracy of
 approximately 83%, even given efforts to address the class imbalance
 that had originally existed within the training set. This accuracy is
 lower than that of the no information rate, meaning that the model would
-perform worse than an individual always choosing the more prevalant
+perform worse than an individual always choosing the more prevalent
 class in the test set.
 
 XGBoost
@@ -743,17 +954,102 @@ Bank_XG_Train <- Bank_XG_Train %>%
 
 Bank_XG_Test <- Bank_XG_Test %>%
       mutate(Attrition_Flag = ifelse(Attrition_Flag == 1,1,0))
+```
+
+``` r
+accuracy_list = c()
+
+for (i in 1:40){
+  print(i)
+  
+  xgb_model <- xgboost(data = as.matrix(Bank_XG_Train[,-c(1,2)]), 
+                         label = Bank_XG_Train$Attrition_Flag,
+                         max_depth = i, 
+                         objective = "binary:logistic", 
+                         nrounds = 100, 
+                         verbose = FALSE,
+                         prediction = TRUE)
+  
+  
+  xgb_model
+
+  end = Sys.time()
+
+  end - start
+
+
+  predictions <- predict(xgb_model, as.matrix(Bank_XG_Test[,-c(1,2)]))
+
+  predictions <- round(predictions)
+
+# length(predictions)
+
+
+# class(predictions)
+
+  predictions <- as.factor(predictions)
+
+# class(predictions)
+# levels(predictions)
+
+  Bank_XG_Test$Attrition_Flag <- as.factor(Bank_XG_Test$Attrition_Flag)
+
+  actual <- as.data.frame(as.factor(Bank_XG_Test$Attrition_Flag))
+  predicted <- as.data.frame(as.factor(predictions))
+  
+  total_accuracy = 0
+
+  for (j in 1:nrow(predicted)){
+    if (predicted[j,1] == actual[j,1]){
+      total_accuracy = total_accuracy + 1
+    }
+    else{
+      total_accuracy = total_accuracy + 0
+    }
+  }
+
+  
+  updated_accuracy = (total_accuracy / nrow(predicted))
+  
+  accuracy_list[i] <- updated_accuracy
+  
+  }
+```
+
+``` r
+print(max(accuracy_list))
+```
+
+    ## [1] 0.9608295
+
+``` r
+print(which.max(accuracy_list))
+```
+
+    ## [1] 4
+
+``` r
+# class(Bank_XG_Test$Attrition_Flag)
+# levels(Bank_XG_Test$Attrition_Flag)
+
+plot(accuracy_list, type = "o")
+```
+
+![](README_figs/README-unnamed-chunk-24-1.png)
+
+``` r
+start = Sys.time()
 
 xgb_model <- xgboost(data = as.matrix(Bank_XG_Train[,-c(1,2)]), 
                          label = Bank_XG_Train$Attrition_Flag,
-                         max_depth = 3, 
+                         max_depth = 4, 
                          objective = "binary:logistic", 
-                         nrounds = 10, 
+                         nrounds = 100, 
                          verbose = FALSE,
                          prediction = TRUE)
 ```
 
-    ## [13:05:07] WARNING: amalgamation/../src/learner.cc:516: 
+    ## [17:35:54] WARNING: amalgamation/../src/learner.cc:516: 
     ## Parameters: { prediction } might not be used.
     ## 
     ##   This may not be accurate due to some parameters are only used in language bindings but
@@ -765,30 +1061,30 @@ xgb_model
 ```
 
     ## ##### xgb.Booster
-    ## raw: 9.5 Kb 
+    ## raw: 93.4 Kb 
     ## call:
     ##   xgb.train(params = params, data = dtrain, nrounds = nrounds, 
     ##     watchlist = watchlist, verbose = verbose, print_every_n = print_every_n, 
     ##     early_stopping_rounds = early_stopping_rounds, maximize = maximize, 
     ##     save_period = save_period, save_name = save_name, xgb_model = xgb_model, 
-    ##     callbacks = callbacks, max_depth = 3, objective = "binary:logistic", 
+    ##     callbacks = callbacks, max_depth = 4, objective = "binary:logistic", 
     ##     prediction = TRUE)
     ## params (as set within xgb.train):
-    ##   max_depth = "3", objective = "binary:logistic", prediction = "TRUE", validate_parameters = "TRUE"
+    ##   max_depth = "4", objective = "binary:logistic", prediction = "TRUE", validate_parameters = "TRUE"
     ## xgb.attributes:
     ##   niter
     ## callbacks:
     ##   cb.evaluation.log()
     ## # of features: 19 
-    ## niter: 10
+    ## niter: 100
     ## nfeatures : 19 
     ## evaluation_log:
     ##     iter train_error
-    ##        1    0.136304
-    ##        2    0.105795
+    ##        1    0.095040
+    ##        2    0.076163
     ## ---                 
-    ##        9    0.060579
-    ##       10    0.055531
+    ##       99    0.000000
+    ##      100    0.000000
 
 ``` r
 end = Sys.time()
@@ -796,7 +1092,7 @@ end = Sys.time()
 end - start
 ```
 
-    ## Time difference of 0.09246612 secs
+    ## Time difference of 0.6355369 secs
 
 ``` r
 predictions <- predict(xgb_model, as.matrix(Bank_XG_Test[,-c(1,2)]))
@@ -815,41 +1111,47 @@ predictions <- as.factor(predictions)
 
 Bank_XG_Test$Attrition_Flag <- as.factor(Bank_XG_Test$Attrition_Flag)
 
-# class(Bank_XG_Test$Attrition_Flag)
-# levels(Bank_XG_Test$Attrition_Flag)
+XGB_confusion <- confusionMatrix(as.factor(predictions), as.factor(Bank_XG_Test$Attrition_Flag))
 
-confusionMatrix(as.factor(predictions), as.factor(Bank_XG_Test$Attrition_Flag))
+XGB_confusion$overall["Accuracy"]
+```
+
+    ##  Accuracy 
+    ## 0.9608295
+
+``` r
+XGB_confusion
 ```
 
     ## Confusion Matrix and Statistics
     ## 
     ##           Reference
     ## Prediction    0    1
-    ##          0 2347   24
-    ##          1  203  464
+    ##          0 2446   15
+    ##          1  104  473
     ##                                           
-    ##                Accuracy : 0.9253          
-    ##                  95% CI : (0.9153, 0.9344)
+    ##                Accuracy : 0.9608          
+    ##                  95% CI : (0.9533, 0.9674)
     ##     No Information Rate : 0.8394          
     ##     P-Value [Acc > NIR] : < 2.2e-16       
     ##                                           
-    ##                   Kappa : 0.7587          
+    ##                   Kappa : 0.8647          
     ##                                           
-    ##  Mcnemar's Test P-Value : < 2.2e-16       
+    ##  Mcnemar's Test P-Value : 7.208e-16       
     ##                                           
-    ##             Sensitivity : 0.9204          
-    ##             Specificity : 0.9508          
-    ##          Pos Pred Value : 0.9899          
-    ##          Neg Pred Value : 0.6957          
+    ##             Sensitivity : 0.9592          
+    ##             Specificity : 0.9693          
+    ##          Pos Pred Value : 0.9939          
+    ##          Neg Pred Value : 0.8198          
     ##              Prevalence : 0.8394          
-    ##          Detection Rate : 0.7725          
-    ##    Detection Prevalence : 0.7804          
-    ##       Balanced Accuracy : 0.9356          
+    ##          Detection Rate : 0.8051          
+    ##    Detection Prevalence : 0.8101          
+    ##       Balanced Accuracy : 0.9642          
     ##                                           
     ##        'Positive' Class : 0               
     ## 
 
-The XGBoost model performed fairly well with an accuracy rate of 92.53%
+The XGBoost model performed very well with an accuracy rate of 96.08%.
 
 ``` r
 watchROC = roc(as.factor(Bank_XG_Test$Attrition_Flag),as.numeric(predictions))
@@ -857,4 +1159,40 @@ watchROC = roc(as.factor(Bank_XG_Test$Attrition_Flag),as.numeric(predictions))
 plot.roc(watchROC)
 ```
 
-![](README_figs/README-unnamed-chunk-20-1.png)
+![](README_figs/README-unnamed-chunk-26-1.png)
+
+``` r
+comparison <- c()
+
+comparison[1] <- log_confusion$overall["Accuracy"]
+comparison[2] <- dtree_confusion$overall["Accuracy"]
+comparison[3] <- bagged_confusion$overall["Accuracy"]
+comparison[4] <- rf_confusion$overall["Accuracy"]
+comparison[5] <- knn_confusion$overall["Accuracy"]
+comparison[6] <- XGB_confusion$overall["Accuracy"]
+
+Labels <- c("Log Reg","Dec Tree","Bag Tree","RF Tree","KNN","XGB")
+
+barplot(comparison,names.arg=Labels,xlab="Model",ylab="Accuracy",col="blue",
+main="Accuracy Comparison",border="red")
+```
+
+![](README_figs/README-unnamed-chunk-27-1.png)
+
+``` r
+Sensitivity <- c()
+
+Sensitivity[1] <- log_confusion$byClass["Sensitivity"]
+Sensitivity[2] <- dtree_confusion$byClass["Sensitivity"]
+Sensitivity[3] <- bagged_confusion$byClass["Sensitivity"]
+Sensitivity[4] <- rf_confusion$byClass["Sensitivity"]
+Sensitivity[5] <- knn_confusion$byClass["Sensitivity"]
+Sensitivity[6] <- XGB_confusion$byClass["Sensitivity"]
+
+Labels <- c("Log Reg","Dec Tree","Bag Tree","RF Tree","KNN","XGB")
+
+barplot(Sensitivity,names.arg=Labels,xlab="Model",ylab="Sensitivity",col="blue",
+main="Accuracy Sensitivity",border="red")
+```
+
+![](README_figs/README-unnamed-chunk-27-2.png)
