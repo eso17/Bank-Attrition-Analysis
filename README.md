@@ -7,6 +7,8 @@ Bank Data CSV was obtained through Kaggle: https://www.kaggle.com/sakshigoyal7/c
 
 This report / submission is an attempt to predict customers who may leave a bank/credit card company, given a variety of predictors.
 
+** This is a generalized analysis. Future updates will be made to reflect optimization techniques for predictive modeling. **
+
 # Table of Contents
 
 * [Loading Packages](https://github.com/eso17/Bank-Attrition-Analysis/blob/main/README.md#1-loading-packages)
@@ -847,7 +849,7 @@ confusionMatrix(as.factor(predictions), as.factor(Bank_XG_Test$Attrition_Flag))
     ##        'Positive' Class : 0               
     ## 
 
-The XGBoost model performed fairly well with an accuracy rate of 92.35%
+The XGBoost model performed fairly well with an accuracy rate of 92.53%
 
 ``` r
 watchROC = roc(as.factor(Bank_XG_Test$Attrition_Flag),as.numeric(predictions))
