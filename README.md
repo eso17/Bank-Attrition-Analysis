@@ -847,11 +847,7 @@ confusionMatrix(as.factor(predictions), as.factor(Bank_XG_Test$Attrition_Flag))
     ##        'Positive' Class : 0               
     ## 
 
-To my surprise, the XGBoost model performed flawlessly, with an accuracy
-of 100%. The model was able to accurately predict every individual who
-was going to leave the credit card company and who was going to stay,
-given every variable within the original data set, except for client
-number.
+The XGBoost model performed fairly well with an accuracy rate of 92.35%
 
 ``` r
 watchROC = roc(as.factor(Bank_XG_Test$Attrition_Flag),as.numeric(predictions))
