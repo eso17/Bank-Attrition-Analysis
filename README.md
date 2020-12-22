@@ -77,7 +77,7 @@ Bank_Data <- Bank_Data[,-c(22,23)]
 # 3) Initial Analysis
 
 
-PCA Analysis
+PCA
 ------------
 
 ``` r
